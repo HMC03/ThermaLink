@@ -1,0 +1,2 @@
+source /home/hayden/HMC03/ThermaLink/esp32-heater-fan-controller/.pio/build/esp32dev/bootloader/gdbinit/symbols
+source /home/hayden/HMC03/ThermaLink/esp32-heater-fan-controller/.pio/build/esp32dev/bootloader/gdbinit/connect
