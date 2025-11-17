@@ -8,5 +8,5 @@ import java.util.Optional;
 @Repository
 public interface PersonDetectRepo extends JpaRepository<PersonDetection, Long> {
 
-    Optional<PersonDetection> findFirstByOrderByRecordingTimeDesc();
+    Optional<PersonDetection> findFirstByOrderByDetectionTimeDesc();
 }

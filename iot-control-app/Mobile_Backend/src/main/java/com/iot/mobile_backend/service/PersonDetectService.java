@@ -23,7 +23,7 @@ public class PersonDetectService {
     public Boolean getLatestPersonDetection() {
         logger.info("Checking current person detection status...");
 
-        Optional<PersonDetection> latestActivity = personDetectRepo.findFirstByOrderByRecordingTimeDesc();
+        Optional<PersonDetection> latestActivity = personDetectRepo.findFirstByOrderByDetectionTimeDesc();
 
         if (latestActivity.isPresent()) {
             PersonDetection detection = latestActivity.get();
