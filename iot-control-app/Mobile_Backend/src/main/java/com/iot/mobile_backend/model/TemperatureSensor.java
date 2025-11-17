@@ -20,6 +20,6 @@ public class TemperatureSensor {
     @Column(name = "temperature_f",nullable = false)
     private Double temperature;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "recording_time")
     private LocalDateTime recordingTime;
 }

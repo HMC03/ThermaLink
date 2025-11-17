@@ -20,6 +20,6 @@ public class PersonDetection {
     @Column
     private Double confidence;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name="detection_time")
     private LocalDateTime detectionTime;
 }

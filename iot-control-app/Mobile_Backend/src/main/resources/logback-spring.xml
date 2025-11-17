@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--  Documentation: https://logback.qos.ch/manual/appenders.html  -->
+
+    <!--  Variables  -->
+    <timestamp key="startTime" datePattern="yyyy-MM-dd-HHmmss"/>
+    <property name="logDir" value="logs"/>
+
+    <!--  Console  -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %highlight(%-5level) %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--  File logs  -->
+    <appender name="rollingfile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/server-${startTime}.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+
+        <!--   Create new logs after exceeding sizes. Delete old logs after reaching caps.   -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/archived/server-%d{yyyy-MM-dd}-%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>20</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!--  Packages' Levels  -->
+    <logger name="com.iot.mobile_backend" level="INFO"/>
+    <logger name="com.iot.mobile_backend.controller" level="INFO"/>
+    <logger name="com.iot.mobile_backend.service" level="INFO"/>
+    <logger name="com.iot.mobile_backend.config" level="INFO"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.springframework.security" level="INFO"/>
+    <logger name="org.hibernate" level="WARN"/>
+    <!--  Change to DEBUG, then TRACE for debugging.  -->
+    <logger name="org.hibernate.SQL" level="ERROR"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="ERROR"/>
+
+    <root level="INFO">
+        <appender-ref ref="console"/>
+        <appender-ref ref="rollingfile"/>
+    </root>
+</configuration>

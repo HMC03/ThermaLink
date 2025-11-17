@@ -78,6 +78,20 @@
             <artifactId>hivemq-mqtt-client</artifactId>
             <version>1.3.9</version>
         </dependency>
+
+        <!--    Logger    -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.17</version>
+        </dependency>
+
+        <!--    .Env Support    -->
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>2.3.2</version>
+        </dependency>
     </dependencies>
 
     <build>
