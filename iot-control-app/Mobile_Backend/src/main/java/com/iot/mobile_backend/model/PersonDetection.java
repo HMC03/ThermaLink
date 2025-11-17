@@ -15,7 +15,7 @@ public class PersonDetection {
     private Long id;
 
     @Column(nullable = false, name="person_detected")
-    private boolean personDetected;
+    private Boolean personDetected;
 
     @Column
     private Double confidence;
