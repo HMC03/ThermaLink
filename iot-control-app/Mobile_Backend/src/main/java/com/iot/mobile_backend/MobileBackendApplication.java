@@ -18,6 +18,11 @@ public class MobileBackendApplication {
         logger.info("Configuring environment variables...");
         Dotenv dotenv = Dotenv.configure().load();
         System.setProperty("CORS_ALLOWED_ORIGIN", dotenv.get("CORS_ALLOWED_ORIGIN"));
+        System.setProperty("MQTT_BROKER_HOST", dotenv.get("MQTT_BROKER_HOST"));
+        System.setProperty("MQTT_BROKER_PORT", dotenv.get("MQTT_BROKER_PORT"));
+        System.setProperty("MQTT_USERNAME", dotenv.get("MQTT_USERNAME"));
+        System.setProperty("MQTT_PASSWORD", dotenv.get("MQTT_PASSWORD"));
+        System.setProperty("MQTT_CLIENT_ID", dotenv.get("MQTT_CLIENT_ID"));
         logger.info("Environment variables configured successfully");
 
         logger.info("Starting Spring Boot application...");
