@@ -10,7 +10,6 @@ import java.util.Optional;
 @Repository
 public interface TempRepository extends JpaRepository<TemperatureSensor, Long> {
 
-    /* NOTE: Service class will extract the current temperature from the list. */
     Optional<TemperatureSensor> findFirstByRoomTypeOrderByRecordingTimeDesc(String roomType);
 
     @Query("SELECT t FROM TemperatureSensor t WHERE t.id IN (SELECT MAX(t2.id) FROM TemperatureSensor t2 GROUP BY t2.roomType)")
