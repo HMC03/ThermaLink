@@ -26,11 +26,11 @@ public class PersonDetectController {
         logger.info("Getting latest the detection status...");
 
         try {
-            logger.info("Person Detected: {}", personDetectService.getLatestPersonDetection());
-            return ResponseEntity.ok(personDetectService.getLatestPersonDetection());
+            logger.info("Latest Detection Activity: {}", personDetectService.getLatestPersonDetectionRecord());
+            return ResponseEntity.ok(personDetectService.getLatestPersonDetectionRecord());
         }
         catch (RuntimeException e) {
-            logger.warn("No person detection data found.");
+            logger.error("No person detection data found.");
             return ResponseEntity.notFound().build(); // 404
         }
         catch (Exception e) {
@@ -45,15 +45,15 @@ public class PersonDetectController {
 
         try {
             if (personDetected == null) {
-                logger.warn("Person detected is empty or null, aborting...");
+                logger.error("Person detected is empty or null, aborting...");
                 return ResponseEntity.badRequest().body("Person detected is empty or null.");
             }
             if (confidence == null || confidence < 0) {
-                logger.warn("Confidence is invalid, aborting...");
+                logger.error("Confidence is invalid, aborting...");
                 return ResponseEntity.badRequest().body("Confidence is invalid.");
             }
             if (recordingTime.isEmpty()) {
-                logger.warn("Recording time is empty or null, aborting...");
+                logger.error("Recording time is empty or null, aborting...");
                 return ResponseEntity.badRequest().body("Recording time is empty or null.");
             }
 
