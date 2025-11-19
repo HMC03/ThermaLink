@@ -30,7 +30,7 @@ public class TemperatureService {
     }
 
     public List<TemperatureSensor> getAllRoomTemperatures() {
-        logger.info("Getting all room temperatures...");
+        logger.info("Fetching all room temperatures from the database...");
 
         List<TemperatureSensor> roomTempListByRoomType = tempRepository.getAllRoomTemperatures();
 
@@ -50,6 +50,7 @@ public class TemperatureService {
         newTemp.setRecordingTime(parseRecordingTime(temperatureDTO.getRecordingTime()));
 
         tempRepository.save(newTemp);
+        logger.info("Temperature record has been added to database.");
     }
 
     private LocalDateTime parseRecordingTime(String recordingTime) {

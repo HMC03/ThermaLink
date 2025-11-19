@@ -8,5 +8,6 @@ import java.util.Optional;
 @Repository
 public interface PersonDetectRepo extends JpaRepository<PersonDetection, Long> {
 
+    // Fetch the latest detection on the database, sorted by detection time.
     Optional<PersonDetection> findFirstByOrderByDetectionTimeDesc();
 }

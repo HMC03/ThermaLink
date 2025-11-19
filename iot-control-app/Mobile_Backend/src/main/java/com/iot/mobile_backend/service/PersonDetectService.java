@@ -22,30 +22,12 @@ public class PersonDetectService {
         this.personDetectRepo = personDetectRepo;
     }
 
-    public Boolean getLatestPersonDetection() {
+    public PersonDetection getLatestPersonDetectionRecord()
+    {
         logger.info("Checking current person detection status...");
 
-        Optional<PersonDetection> latestActivity = personDetectRepo.findFirstByOrderByDetectionTimeDesc();
-
-        if (latestActivity.isPresent()) {
-            PersonDetection detection = latestActivity.get();
-
-            if (detection.getPersonDetected() && detection.getConfidence() >= 0.65) {
-                logger.info("Person detected!");
-                return true;
-            }
-            else if (detection.getConfidence() < 0.65) {
-                logger.info("Confidence too low, default to false.");
-                return false;
-            }
-            else {
-                logger.info("Person not detection!");
-                return false;
-            }
-        }
-
-        logger.warn("No person detection data found. Returning default value: false...");
-        return false;
+        return personDetectRepo.findFirstByOrderByDetectionTimeDesc()
+                .orElseThrow(() -> new RuntimeException("No person detection data found."));
     }
 
     public void recordPersonDetection(PersonDetectionDTO detectionDTO) {
@@ -57,6 +39,7 @@ public class PersonDetectService {
         newDetection.setDetectionTime(parseRecordingTime(detectionDTO.getDetectionTime()));
 
         personDetectRepo.save(newDetection);
+        logger.info("New detected activity has been added to database.");
     }
 
     private LocalDateTime parseRecordingTime(String recordingTime) {
