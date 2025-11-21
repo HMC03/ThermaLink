@@ -39,6 +39,7 @@ logs/
 
 ### Environment ###
 .env
+.venv
 
 ### SQLite DB ###
 *.db
