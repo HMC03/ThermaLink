@@ -9,6 +9,7 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 import com.iot.mobile_backend.dto.PersonDetectionDTO;
 import com.iot.mobile_backend.dto.TemperatureDTO;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ public class MqttService {
     }
 
     @PostConstruct
-    public void connectAndSubscribe() {
+    private void connectAndSubscribe() {
         logger.info("Initializing MQTT service...");
 
         try {
@@ -88,6 +89,33 @@ public class MqttService {
             SpringApplication.exit(applicationContext, () -> 1);
             System.exit(1);
         }
+    }
+
+    @PreDestroy
+    private void disconnect() {
+        logger.info("Shutting down connection to MQTT broker...");
+
+        try {
+            if (mqttClient.getState().isConnected()) {
+                logger.info("Disconnecting from MQTT broker...");
+
+                mqttClient.disconnect()
+                        .get(3, TimeUnit.SECONDS);
+
+                logger.info("Disconnected from MQTT broker successfully.");
+            }
+            else {
+                logger.info("MQTT broker is already disconnected.");
+            }
+        }
+        catch (TimeoutException e) {
+            logger.error("MQTT broker disconnect timed out.");
+        }
+        catch (Exception e) {
+            logger.error("Error occurred while disconnecting from MQTT broker.", e);
+        }
+
+        logger.info("MQTT connection shut down successfully.");
     }
 
     private CompletableFuture<Mqtt5ConnAck> connectToMqtt() {
