@@ -12,4 +12,7 @@ pip install "polars>=0.20.0"
 pip install "ultralytics-thop>=2.0.18"
 pip install "ultralytics==8.3.230" --no-deps
 
+# Install DHT sensor library
+pip install adafruit-circuitpython-dht
+
 echo "Setup complete. Activate venv with: source .venv/bin/activate"
