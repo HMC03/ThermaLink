@@ -1,0 +1,17 @@
+# Python dependencies for Raspberry Pi Camera Person Detection
+
+# YOLO for person detection
+ultralytics>=8.0.0
+
+# Computer vision
+opencv-python>=4.8.0
+
+# MQTT client
+paho-mqtt>=1.6.1
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Additional utilities
+numpy>=1.24.0
+pillow>=10.0.0
