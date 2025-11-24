@@ -2,6 +2,8 @@ import os
 import ssl
 import time
 import threading
+import json
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 # MQTT
@@ -17,6 +19,9 @@ import adafruit_dht
 import board
 
 load_dotenv()
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
 
 # ------------------------------
 # MQTT CONFIG
@@ -69,10 +74,22 @@ def person_detection_task():
             num_people = len(results[0].boxes)
 
             status = "occupied" if num_people > 0 else "empty"
-            client.publish(TOPIC_PERSON, status)
 
-            # For debugging
-            print(f"[YOLO] People detected: {num_people} -> {status}")
+            # Compute confidence
+            if num_people > 0:
+                conf = float(max(results[0].boxes.conf))
+            else:
+                conf = 0.0
+
+            payload = {
+                "status": status,
+                "count": num_people,
+                "confidence": round(conf, 4),
+                "timestamp": now_iso()
+            }
+
+            client.publish(TOPIC_PERSON, json.dumps(payload))
+            print("[YOLO]", payload)
 
             # Optional: show frame
             annotated = results[0].plot()
@@ -105,12 +122,23 @@ def temperature_task():
             humidity = dht.humidity
             
             # MQTT publishing
-            if temp_f is not None:
-                client.publish(TOPIC_TEMP, f"{temp_f:.1f}")
-            if humidity is not None:
-                client.publish(TOPIC_HUMID, f"{humidity:.1f}")
+            timestamp = now_iso()
 
-            print(f"[DHT] Temp: {temp_f:.1f}F | Humidity: {humidity:.1f}%")
+            if temp_f is not None:
+                payload = {
+                    "temp_f": round(temp_f, 1),
+                    "timestamp": timestamp
+                }
+                client.publish(TOPIC_TEMP, json.dumps(payload))
+
+            if humidity is not None:
+                payload = {
+                    "humidity": round(humidity, 1),
+                    "timestamp": timestamp
+                }
+                client.publish(TOPIC_HUMID, json.dumps(payload))
+
+            print(f"[DHT] {timestamp} | Temp: {temp_f:.1f}F | Humidity: {humidity:.1f}%")
 
         except Exception as e:
             print("[DHT] Read error:", e)
