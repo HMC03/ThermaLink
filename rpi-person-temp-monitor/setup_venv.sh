@@ -15,4 +15,8 @@ pip install "ultralytics==8.3.230" --no-deps
 # Install DHT sensor library
 pip install adafruit-circuitpython-dht
 
+# MQTT dependencies
+pip install paho-mqtt
+pip install python-dotenv
+
 echo "Setup complete. Activate venv with: source .venv/bin/activate"
