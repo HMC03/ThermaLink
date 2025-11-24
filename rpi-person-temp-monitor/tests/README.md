@@ -9,3 +9,7 @@ person_detect_test.py
 temp_sensor_test.py
 * prints temperature and humidity values from dht-11 sensor
 * Use GPIO pin 4, supply sensor with 3.3V and GND
+
+hivemq_test.py
+* verifies connection to hivemq using paho-mqtt
+* variables saved to .env file
