@@ -35,7 +35,7 @@ public class PersonDetectController {
             return ResponseEntity.ok(personDetectService.getLatestPersonDetectionRecordByRoom(roomType));
         }
         catch (RuntimeException e) {
-            logger.error("No person detection data found.");
+            logger.error("No person detection data found for this room: {}.", roomType);
             return ResponseEntity.notFound().build(); // 404
         }
         catch (Exception e) {
@@ -59,7 +59,7 @@ public class PersonDetectController {
 
     @PostMapping("/create")
     public ResponseEntity<?> createNewDetectionRecord(@Valid @RequestParam("roomtype") String roomType, @RequestParam("persondetected") Boolean personDetected, @RequestParam("confidence") Double confidence, @RequestParam("recordingtime") String recordingTime) {
-        logger.info("Creating new person detection record...");
+        logger.info("Creating new person detection record for room: {}...", roomType);
 
         try {
             if (roomType == null || roomType.trim().isEmpty()) {
