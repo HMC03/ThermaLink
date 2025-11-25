@@ -21,7 +21,7 @@ import board
 load_dotenv()
 
 def now_iso():
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
 # ------------------------------
 # MQTT CONFIG
@@ -80,10 +80,13 @@ def person_detection_task():
             else:
                 conf = 0.0
 
+            # MQTT publishing
+            timestamp = now_iso()
+
             person_payload = {
                 "status": status,
                 "confidence": round(conf, 4),
-                "timestamp": now_iso()
+                "timestamp": timestamp
             }
 
             client.publish(TOPIC_PERSON_STATUS, json.dumps(person_payload))
@@ -127,7 +130,7 @@ def temperature_task():
                     "timestamp": timestamp
                 }
                 client.publish(TOPIC_TEMP_STATUS, json.dumps(temp_payload))
-            print(f"[DHT] {timestamp} | Temp: {temp_f:.1f}F")
+            print("[DHT]", temp_payload)
 
         except Exception as e:
             print("[DHT] Read error:", e)
