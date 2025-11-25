@@ -21,7 +21,7 @@ import board
 load_dotenv()
 
 def now_iso():
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
 # ------------------------------
 # MQTT CONFIG
@@ -31,9 +31,8 @@ PORT     = int(os.getenv("MQTT_PORT"))
 USERNAME = os.getenv("MQTT_USER")
 PASSWORD = os.getenv("MQTT_PASS")
 
-TOPIC_PERSON = "roomA/person/status"
-TOPIC_TEMP   = "roomA/temperature"
-TOPIC_HUMID  = "roomA/humidity"
+TOPIC_PERSON_STATUS = "roomA/person/status"
+TOPIC_TEMP_STATUS   = "roomA/temperature/status"
 
 # ------------------------------
 # MQTT SETUP
@@ -73,7 +72,7 @@ def person_detection_task():
             results = model.predict(frame, classes=[0], verbose=False)
             num_people = len(results[0].boxes)
 
-            status = "occupied" if num_people > 0 else "empty"
+            status = True if num_people > 0 else False
 
             # Compute confidence
             if num_people > 0:
@@ -81,15 +80,17 @@ def person_detection_task():
             else:
                 conf = 0.0
 
-            payload = {
+            # MQTT publishing
+            timestamp = now_iso()
+
+            person_payload = {
                 "status": status,
-                "count": num_people,
                 "confidence": round(conf, 4),
-                "timestamp": now_iso()
+                "timestamp": timestamp
             }
 
-            client.publish(TOPIC_PERSON, json.dumps(payload))
-            print("[YOLO]", payload)
+            client.publish(TOPIC_PERSON_STATUS, json.dumps(person_payload))
+            print("[YOLO]", person_payload)
 
             # Optional: show frame
             annotated = results[0].plot()
@@ -118,27 +119,18 @@ def temperature_task():
     while True:
         try:
             temp_c = dht.temperature
-            temp_f = temp_c * 9/5 + 32
-            humidity = dht.humidity
+            temp_f = temp_c * 9/5 + 32 
             
             # MQTT publishing
             timestamp = now_iso()
 
             if temp_f is not None:
-                payload = {
+                temp_payload = {
                     "temp_f": round(temp_f, 1),
                     "timestamp": timestamp
                 }
-                client.publish(TOPIC_TEMP, json.dumps(payload))
-
-            if humidity is not None:
-                payload = {
-                    "humidity": round(humidity, 1),
-                    "timestamp": timestamp
-                }
-                client.publish(TOPIC_HUMID, json.dumps(payload))
-
-            print(f"[DHT] {timestamp} | Temp: {temp_f:.1f}F | Humidity: {humidity:.1f}%")
+                client.publish(TOPIC_TEMP_STATUS, json.dumps(temp_payload))
+            print("[DHT]", temp_payload)
 
         except Exception as e:
             print("[DHT] Read error:", e)
