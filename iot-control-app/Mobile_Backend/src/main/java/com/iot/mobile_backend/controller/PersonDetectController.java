@@ -40,10 +40,14 @@ public class PersonDetectController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createNewDetectionRecord(@Valid @RequestParam("persondetected") Boolean personDetected, @RequestParam("confidence") Double confidence, @RequestParam("recordingtime") String recordingTime) {
+    public ResponseEntity<?> createNewDetectionRecord(@Valid @RequestParam("roomtype") String roomType, @RequestParam("persondetected") Boolean personDetected, @RequestParam("confidence") Double confidence, @RequestParam("recordingtime") String recordingTime) {
         logger.info("Creating new person detection record...");
 
         try {
+            if (roomType == null || roomType.trim().isEmpty()) {
+                logger.error("Room type is empty or null, aborting...");
+                return ResponseEntity.badRequest().body("Room type is empty or null.");
+            }
             if (personDetected == null) {
                 logger.error("Person detected is empty or null, aborting...");
                 return ResponseEntity.badRequest().body("Person detected is empty or null.");
@@ -58,6 +62,7 @@ public class PersonDetectController {
             }
 
             PersonDetectionDTO personDetectionDTO = new PersonDetectionDTO();
+            personDetectionDTO.setRoomType(roomType);
             personDetectionDTO.setPersonDetected(personDetected);
             personDetectionDTO.setConfidence(confidence);
             personDetectionDTO.setDetectionTime(recordingTime);

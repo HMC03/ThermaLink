@@ -15,6 +15,9 @@ public class PersonDetection {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "room_type", nullable = false)
+    private String roomType;
+
     @Column(nullable = false, name="person_detected")
     private Boolean personDetected;
 

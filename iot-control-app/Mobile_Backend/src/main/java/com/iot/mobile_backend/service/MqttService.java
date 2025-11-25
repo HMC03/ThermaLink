@@ -141,33 +141,12 @@ public class MqttService {
     private CompletableFuture<Void> subscribeToTopics() {
         logger.info("Subscribing to all topics...");
 
-//        CompletableFuture<Void> recieveBaseTempSub = mqttClient.subscribeWith()
-//                .topicFilter("temperature/status/base")
-//                .qos(MqttQos.AT_LEAST_ONCE)
-//                .callback(this::handleTemperatureMessage)
-//                .send()
-//                .thenRun(() -> logger.info("Subscribed to topic: temperature/status/base"));
-
         CompletableFuture<Void> recieveAllRoomTempSub = mqttClient.subscribeWith()
                 .topicFilter("+/temperature/status")
                 .qos(MqttQos.AT_LEAST_ONCE)
                 .callback(this::handleTemperatureMessage)
                 .send()
                 .thenRun(() -> logger.info("Subscribed to all temperature topics"));
-
-//        CompletableFuture<Void> recieveHeaterTempSub = mqttClient.subscribeWith()
-//                .topicFilter("roomA/temperature/status")
-//                .qos(MqttQos.AT_LEAST_ONCE)
-//                .callback(this::handleTemperatureMessage)
-//                .send()
-//                .thenRun(() -> logger.info("Subscribed to topic: temperature/status/heater"));
-//
-//        CompletableFuture<Void> recieveCameraDetectionSub = mqttClient.subscribeWith()
-//                .topicFilter("roomA/person/status")
-//                .qos(MqttQos.AT_LEAST_ONCE)
-//                .callback(this::handlePersonDetectionMessage)
-//                .send()
-//                .thenRun(() -> logger.info("Subscribed to topic: camera/status"));
 
         CompletableFuture<Void> recieveAllPersonRoomDetectionSub = mqttClient.subscribeWith()
                 .topicFilter("+/person/status")
@@ -199,7 +178,6 @@ public class MqttService {
 
             String topic = message.getTopic().toString();
             String roomType = extractRoomTypeFromTopic(topic);
-            logger.info("Room type: {}.", roomType);
 
             Double temperature = data.get("temp_f").asDouble();
             String recordingTime = data.get("timestamp").asText();
@@ -241,10 +219,17 @@ public class MqttService {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode data = objectMapper.readTree(payload); // Convert string to JSON
 
+            String topic = message.getTopic().toString();
+            String roomType = extractRoomTypeFromTopic(topic);
+
             boolean personDetected = data.get("status").asBoolean();
             double confidence = data.get("confidence").asDouble();
             String detectionTime = data.get("timestamp").asText();
 
+            if (roomType.isEmpty()) {
+                logger.error("Invalid inputs, aborting...");
+                throw new InputMismatchException("Invalid inputs, aborting...");
+            }
             if (confidence < 0 || confidence > 1) {
                 logger.error("Invalid confidence value, aborting...");
                 throw new InputMismatchException("Invalid confidence value, aborting...");
@@ -255,16 +240,18 @@ public class MqttService {
             }
 
             PersonDetectionDTO newDetection = new PersonDetectionDTO();
+            newDetection.setRoomType(roomType);
             newDetection.setPersonDetected(personDetected);
             newDetection.setConfidence(confidence);
             newDetection.setDetectionTime(detectionTime);
 
             personDetectService.recordPersonDetection(newDetection);
 
-            if (personDetected && confidence >= 0.65) {
+            if (personDetected && confidence >= 0.1) {
                 logger.info("Person entered the room at: {}.", detectionTime);
             }
             else {
+                // Camera is sensitive enough that anything lower than 0.1, no person is detected.
                 logger.info("Room is empty.");
             }
         }
