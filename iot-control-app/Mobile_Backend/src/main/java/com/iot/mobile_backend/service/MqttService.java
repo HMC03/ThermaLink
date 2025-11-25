@@ -141,29 +141,43 @@ public class MqttService {
     private CompletableFuture<Void> subscribeToTopics() {
         logger.info("Subscribing to all topics...");
 
-        CompletableFuture<Void> recieveBaseTempSub = mqttClient.subscribeWith()
-                .topicFilter("temperature/status/base")
+//        CompletableFuture<Void> recieveBaseTempSub = mqttClient.subscribeWith()
+//                .topicFilter("temperature/status/base")
+//                .qos(MqttQos.AT_LEAST_ONCE)
+//                .callback(this::handleTemperatureMessage)
+//                .send()
+//                .thenRun(() -> logger.info("Subscribed to topic: temperature/status/base"));
+
+        CompletableFuture<Void> recieveAllRoomTempSub = mqttClient.subscribeWith()
+                .topicFilter("+/temperature/status")
                 .qos(MqttQos.AT_LEAST_ONCE)
                 .callback(this::handleTemperatureMessage)
                 .send()
-                .thenRun(() -> logger.info("Subscribed to topic: temperature/status/base"));
+                .thenRun(() -> logger.info("Subscribed to all temperature topics"));
 
-        CompletableFuture<Void> recieveHeaterTempSub = mqttClient.subscribeWith()
-                .topicFilter("temperature/status/heater")
-                .qos(MqttQos.AT_LEAST_ONCE)
-                .callback(this::handleTemperatureMessage)
-                .send()
-                .thenRun(() -> logger.info("Subscribed to topic: temperature/status/heater"));
+//        CompletableFuture<Void> recieveHeaterTempSub = mqttClient.subscribeWith()
+//                .topicFilter("roomA/temperature/status")
+//                .qos(MqttQos.AT_LEAST_ONCE)
+//                .callback(this::handleTemperatureMessage)
+//                .send()
+//                .thenRun(() -> logger.info("Subscribed to topic: temperature/status/heater"));
+//
+//        CompletableFuture<Void> recieveCameraDetectionSub = mqttClient.subscribeWith()
+//                .topicFilter("roomA/person/status")
+//                .qos(MqttQos.AT_LEAST_ONCE)
+//                .callback(this::handlePersonDetectionMessage)
+//                .send()
+//                .thenRun(() -> logger.info("Subscribed to topic: camera/status"));
 
-        CompletableFuture<Void> recieveCameraDetectionSub = mqttClient.subscribeWith()
-                .topicFilter("camera/status")
+        CompletableFuture<Void> recieveAllPersonRoomDetectionSub = mqttClient.subscribeWith()
+                .topicFilter("+/person/status")
                 .qos(MqttQos.AT_LEAST_ONCE)
                 .callback(this::handlePersonDetectionMessage)
                 .send()
-                .thenRun(() -> logger.info("Subscribed to topic: camera/status"));
+                .thenRun(() -> logger.info("Subscribed to all person detection topics"));
 
         // Organize all subscriptions here, so we can subscribe to all topics at once
-        return CompletableFuture.allOf(recieveBaseTempSub, recieveHeaterTempSub, recieveCameraDetectionSub)
+        return CompletableFuture.allOf(recieveAllRoomTempSub, recieveAllPersonRoomDetectionSub)
                 .whenComplete((result, throwable) -> {
                     if (throwable != null) {
                         logger.error("Failed to subscribe to topics.", throwable);
@@ -179,12 +193,15 @@ public class MqttService {
             String payload = new String(message.getPayloadAsBytes(), UTF_8);
             logger.info("Received temperature reading: {}.", payload);
 
-            // Example String format: {"room":"base","temperature":22.5,"timestamp":"2024-11-18T15:30:45"}
+            // Example String format: {"temp_f": 74.1, "timestamp": "2025-11-24T19:36:55"}
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode data = objectMapper.readTree(payload); // Convert string to JSON
 
-            String roomType = data.get("room").asText();
-            Double temperature = data.get("temperature").asDouble();
+            String topic = message.getTopic().toString();
+            String roomType = extractRoomTypeFromTopic(topic);
+            logger.info("Room type: {}.", roomType);
+
+            Double temperature = data.get("temp_f").asDouble();
             String recordingTime = data.get("timestamp").asText();
 
             if (roomType.isEmpty()) {
@@ -220,11 +237,11 @@ public class MqttService {
             String payload = new String(message.getPayloadAsBytes(), UTF_8);
             logger.info("Received person detection status: {}.", payload);
 
-            // Example String format: {"person_detected":false,"confidence":0.78,"timestamp":"2024-11-18T15:26:47"}
+            // Example String format: {"status": true, "confidence": 0.8003, "timestamp": "2025-11-24T19:36:56"}
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode data = objectMapper.readTree(payload); // Convert string to JSON
 
-            boolean personDetected = data.get("person_detected").asBoolean();
+            boolean personDetected = data.get("status").asBoolean();
             double confidence = data.get("confidence").asDouble();
             String detectionTime = data.get("timestamp").asText();
 
@@ -255,5 +272,17 @@ public class MqttService {
             logger.error("Error occurred while handling person detection message.", e);
             logger.error("Nothing has been done with the message.", e);
         }
+    }
+
+    private String extractRoomTypeFromTopic(String topic) {
+        String[] topicByParts = topic.split("/");
+
+        if (topicByParts.length < 2) {
+            logger.error("Topic name only contains one part. Returning topic name...");
+            return topic;
+        }
+
+        // Assuming all topic names start with a room type.
+        return topicByParts[0];
     }
 }
