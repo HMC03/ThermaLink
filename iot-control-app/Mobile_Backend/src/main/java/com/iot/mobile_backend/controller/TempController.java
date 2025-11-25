@@ -24,7 +24,7 @@ public class TempController {
         this.temperatureService = temperatureService;
     }
 
-    @GetMapping("/current/{roomType}")
+    @GetMapping("/status/{roomType}")
     public ResponseEntity<?> getCurrentTemperatureByRoomType(@PathVariable("roomType") String roomType) {
         logger.info("Getting current temperature for room type: {}...", roomType);
 
@@ -47,7 +47,7 @@ public class TempController {
         }
     }
 
-    @GetMapping("/current/all")
+    @GetMapping("/status/all")
     public ResponseEntity<List<TemperatureSensor>> getAllRoomTemperatures() {
         logger.info("Getting all room temperatures...");
 

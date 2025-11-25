@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class PersonDetectService {
@@ -21,12 +22,24 @@ public class PersonDetectService {
         this.personDetectRepo = personDetectRepo;
     }
 
-    public PersonDetection getLatestPersonDetectionRecord()
+    public PersonDetection getLatestPersonDetectionRecordByRoom(String roomType)
     {
         logger.info("Checking current person detection status...");
 
-        return personDetectRepo.findFirstByOrderByDetectionTimeDesc()
-                .orElseThrow(() -> new RuntimeException("No person detection data found."));
+        return personDetectRepo.findFirstByRoomTypeOrderByDetectionTimeDesc(roomType)
+                .orElseThrow(() -> new RuntimeException("No person detection data found for this room."));
+    }
+
+    public List<PersonDetection> getAllPersonDetectionRecords() {
+        logger.info("Fetching all person detection records in each room...");
+
+        List<PersonDetection> personDetections = personDetectRepo.getAllRoomDetections();
+
+        if (personDetections.isEmpty()) {
+            logger.warn("No person detection data found.");
+        }
+
+        return personDetections;
     }
 
     public void recordPersonDetection(PersonDetectionDTO detectionDTO) {

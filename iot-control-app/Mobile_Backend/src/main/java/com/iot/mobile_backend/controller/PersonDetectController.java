@@ -21,13 +21,18 @@ public class PersonDetectController {
         this.personDetectService = personDetectService;
     }
 
-    @GetMapping("/status")
-    public ResponseEntity<?> getLatestPersonDetection() {
-        logger.info("Getting latest the detection status...");
+    @GetMapping("/status/{roomType}")
+    public ResponseEntity<?> getLatestPersonDetection(@PathVariable("roomType") String roomType) {
+        logger.info("Getting latest the detection status for this room: {}...", roomType);
 
         try {
-            logger.info("Latest Detection Activity: {}", personDetectService.getLatestPersonDetectionRecord());
-            return ResponseEntity.ok(personDetectService.getLatestPersonDetectionRecord());
+            if (roomType == null || roomType.trim().isEmpty()) {
+                logger.error("Room type is empty or null, aborting...");
+                return ResponseEntity.badRequest().body("Room type is empty or null.");
+            }
+
+            logger.info("Latest Detection Activity: {}", personDetectService.getLatestPersonDetectionRecordByRoom(roomType));
+            return ResponseEntity.ok(personDetectService.getLatestPersonDetectionRecordByRoom(roomType));
         }
         catch (RuntimeException e) {
             logger.error("No person detection data found.");
@@ -36,6 +41,19 @@ public class PersonDetectController {
         catch (Exception e) {
             logger.error("Error occurred while getting latest person detection status: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body("Internal server error."); // 500
+        }
+    }
+
+    @GetMapping("/status/all")
+    public ResponseEntity<?> getAllPersonDetectionRecords() {
+        logger.info("Getting all person detection records...");
+
+        try {
+            return ResponseEntity.ok(personDetectService.getAllPersonDetectionRecords()); // Returns an empty list if no data found
+        }
+        catch (Exception e) {
+            logger.error("Error occurred while getting all person detection records: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body("Internal server error.");
         }
     }
 
