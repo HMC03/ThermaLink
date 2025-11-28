@@ -2,3 +2,4 @@ include/config.h
 
 sdkconfig
 dependencies.lock
+managed_components/
