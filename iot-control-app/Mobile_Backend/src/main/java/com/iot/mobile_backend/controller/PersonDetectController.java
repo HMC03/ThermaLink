@@ -21,6 +21,7 @@ public class PersonDetectController {
         this.personDetectService = personDetectService;
     }
 
+    // Example: GET /api/person-detect/status/roomA
     @GetMapping("/status/{roomType}")
     public ResponseEntity<?> getLatestPersonDetection(@PathVariable("roomType") String roomType) {
         logger.info("Getting latest the detection status for this room: {}...", roomType);
@@ -44,6 +45,7 @@ public class PersonDetectController {
         }
     }
 
+    // Example: GET /api/person-detect/status/all
     @GetMapping("/status/all")
     public ResponseEntity<?> getAllPersonDetectionRecords() {
         logger.info("Getting all person detection records...");
@@ -57,6 +59,7 @@ public class PersonDetectController {
         }
     }
 
+    // Example: POST /api/person-detect/create?persondetected=true&confidence=0.87&recordingtime=2024-11-28T00:35:22
     @PostMapping("/create")
     public ResponseEntity<?> createNewDetectionRecord(@Valid @RequestParam("roomtype") String roomType, @RequestParam("persondetected") Boolean personDetected, @RequestParam("confidence") Double confidence, @RequestParam("recordingtime") String recordingTime) {
         logger.info("Creating new person detection record for room: {}...", roomType);

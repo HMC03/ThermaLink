@@ -24,6 +24,10 @@ public class TempController {
         this.temperatureService = temperatureService;
     }
 
+    /*
+    Example: GET /api/temperature/status/roomA
+    Example: GET /api/temperature/status/baseline
+    */
     @GetMapping("/status/{roomType}")
     public ResponseEntity<?> getCurrentTemperatureByRoomType(@PathVariable("roomType") String roomType) {
         logger.info("Getting current temperature for room type: {}...", roomType);
@@ -47,6 +51,7 @@ public class TempController {
         }
     }
 
+    // Example: GET /api/temperature/status/all
     @GetMapping("/status/all")
     public ResponseEntity<List<TemperatureSensor>> getAllRoomTemperatures() {
         logger.info("Getting all room temperatures...");
@@ -61,6 +66,7 @@ public class TempController {
         }
     }
 
+    // Example: POST /api/temperature/create?roomtype=roomA&temperature=74&recordingtime=2022-01-01T12:00:00
     @PostMapping("/create")
     public ResponseEntity<?> createTemperatureRecord(@Valid @RequestParam("roomtype") String roomType, @RequestParam("temperature") Double temperature, @RequestParam("recordingtime") String recordingTime) {
         logger.info("Creating new temperature record for room: {}...", roomType);

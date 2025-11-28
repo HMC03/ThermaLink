@@ -1,11 +1,15 @@
 package com.iot.mobile_backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
+import com.iot.mobile_backend.dto.FanDTO;
+import com.iot.mobile_backend.dto.HeaterDTO;
 import com.iot.mobile_backend.dto.PersonDetectionDTO;
 import com.iot.mobile_backend.dto.TemperatureDTO;
 import jakarta.annotation.PostConstruct;
@@ -18,6 +22,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.InputMismatchException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +38,8 @@ public class MqttService {
     private final Mqtt5AsyncClient mqttClient;
     private final TemperatureService temperatureService;
     private final PersonDetectService personDetectService;
+    private final HeaterService heaterService;
+    private final FanService fanService;
     private final static Logger logger = LoggerFactory.getLogger(MqttService.class);
     private final ApplicationContext applicationContext;
 
@@ -42,12 +50,20 @@ public class MqttService {
     private String password;
 
     @Autowired
-    public MqttService(Mqtt5AsyncClient mqttClient, TemperatureService temperatureService, PersonDetectService personDetectService, ApplicationContext applicationContext) {
+    public MqttService(Mqtt5AsyncClient mqttClient, TemperatureService temperatureService, PersonDetectService personDetectService, HeaterService heaterService, FanService fanService,ApplicationContext applicationContext) {
         this.mqttClient = mqttClient;
         this.temperatureService = temperatureService;
         this.personDetectService = personDetectService;
+        this.heaterService = heaterService;
+        this.fanService = fanService;
         this.applicationContext = applicationContext;
     }
+
+    /*
+    ================================================
+    MQTT Connection and Lifecycle Management
+    ================================================
+    */
 
     @PostConstruct
     private void connectAndSubscribe() {
@@ -60,7 +76,7 @@ public class MqttService {
 
             logger.info("MQTT service initialized successfully");
         }
-        catch (ExecutionException e) {
+        catch (RuntimeException e) {
             Throwable cause = e.getCause();
             logger.error("MQTT connection failed: {}", cause.getMessage(), cause);
 
@@ -130,13 +146,20 @@ public class MqttService {
                 .send()
                 .whenComplete((connAck, throwable) -> {
                     if (throwable != null) {
-                        logger.error("Failed to authorize credentials: {}.", throwable.getMessage() ,throwable);
+                        logger.error("Failed to authorize credentials.",throwable);
+                        throw new RuntimeException(throwable);
                     }
                     else {
                         logger.info("MQTT client connected successfully.");
                     }
                 });
     }
+
+     /*
+    ================================================
+    MQTT Subscriptions
+    ================================================
+    */
 
     private CompletableFuture<Void> subscribeToTopics() {
         logger.info("Subscribing to all topics...");
@@ -155,17 +178,38 @@ public class MqttService {
                 .send()
                 .thenRun(() -> logger.info("Subscribed to all person detection topics"));
 
+        CompletableFuture<Void> recieveAllHeaterStatusSub = mqttClient.subscribeWith()
+                .topicFilter("+/heater/status")
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .callback(this::handleSensorStatusMessage)
+                .send()
+                .thenRun(() -> logger.info("Subscribed to all heater sensors."));
+
+        CompletableFuture<Void> recieveAllFanStatusSub = mqttClient.subscribeWith()
+                .topicFilter("+/fan/status")
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .callback(this::handleSensorStatusMessage)
+                .send()
+                .thenRun(() -> logger.info("Subscribed to all fan sensors."));
+
         // Organize all subscriptions here, so we can subscribe to all topics at once
-        return CompletableFuture.allOf(recieveAllRoomTempSub, recieveAllPersonRoomDetectionSub)
-                .whenComplete((result, throwable) -> {
+        return CompletableFuture.allOf(recieveAllRoomTempSub, recieveAllPersonRoomDetectionSub, recieveAllHeaterStatusSub, recieveAllFanStatusSub)
+                .whenComplete((subAck, throwable) -> {
                     if (throwable != null) {
                         logger.error("Failed to subscribe to topics.", throwable);
+                        throw new RuntimeException(throwable);
                     }
                     else {
                         logger.info("Successfully subscribed to all topics.");
                     }
                 });
     }
+
+     /*
+    ================================================
+    MQTT Subscriptions Message Handlers
+    ================================================
+    */
 
     private void handleTemperatureMessage(Mqtt5Publish message) {
         try {
@@ -260,6 +304,152 @@ public class MqttService {
             logger.error("Nothing has been done with the message.", e);
         }
     }
+
+    private void handleSensorStatusMessage(Mqtt5Publish message) {
+        try {
+            String payload = new String(message.getPayloadAsBytes(), UTF_8);
+            String topic = message.getTopic().toString();
+
+            String[] topicByParts = topic.split("/");
+            if (topicByParts.length < 2) {
+                logger.error("Invalid topic, aborting message...");
+                return;
+            }
+
+            String sensor = topicByParts[1]; // assumes topic is {roomType}/{sensor}/status
+            logger.info("Received latest {} sensor activity: {}.", sensor, payload);
+
+            // Example string format: {"status": true, "timestamp": "2025-11-24T19:36:56"}
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode data = objectMapper.readTree(payload);
+
+            String roomType = extractRoomTypeFromTopic(topic);
+            boolean sensorStatus = data.get("status").asBoolean();
+            String recordingTime = data.get("timestamp").asText();
+
+            if (roomType.isEmpty()) {
+                logger.error("Invalid inputs, aborting...");
+                throw new InputMismatchException("Invalid inputs, aborting...");
+            }
+            if (recordingTime.isEmpty()) {
+                logger.error("Invalid inputs, aborting...");
+                throw new InputMismatchException("Invalid inputs, aborting...");
+            }
+
+            switch (sensor) {
+                case "heater" -> {
+                    HeaterDTO newHeaterStatus = new HeaterDTO();
+                    newHeaterStatus.setRoomType(roomType);
+                    newHeaterStatus.setHeaterStatus(sensorStatus);
+                    newHeaterStatus.setRecordingTime(recordingTime);
+
+                    heaterService.recordHeaterStatus(newHeaterStatus);
+                }
+                case "fan" -> {
+                    FanDTO newFanStatus = new FanDTO();
+                    newFanStatus.setRoomType(roomType);
+                    newFanStatus.setFanStatus(sensorStatus);
+                    newFanStatus.setRecordingTime(recordingTime);
+
+                    fanService.recordFanStatus(newFanStatus);
+                }
+                default -> {
+                    logger.error("Invalid sensor type, aborting...");
+                    throw new InputMismatchException("Invalid sensor type, aborting...");
+                }
+            }
+        }
+        catch (Exception e) {
+            logger.error("Error occurred while handling heater status message.", e);
+            logger.error("Nothing has been done with the message.", e);
+        }
+    }
+
+    /*
+    ================================================
+    MQTT Publish Handlers
+    ================================================
+    */
+
+    public void publishSensorCommands(String sensor, String roomType, Boolean status) throws JsonProcessingException {
+        String topic = String.format("%s/%s/command", roomType, sensor);
+        String command = status ? "on" : "off";
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Create and format date to our ISO format
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+        String timestamp = now.format(formatter);
+
+        ObjectNode payload = objectMapper.createObjectNode()
+                .put("status", command)
+                .put("timestamp", timestamp);
+
+        String jsonPayload = objectMapper.writeValueAsString(payload);
+
+        logger.info("Publishing {} sensor command: {}...", sensor, jsonPayload);
+
+        switch (sensor) {
+            case "heater", "fan" -> mqttClient.publishWith()
+                    .topic(topic)
+                    .payload(jsonPayload.getBytes(UTF_8))
+                    .qos(MqttQos.AT_LEAST_ONCE)
+                    .send()
+                    .whenComplete((result, throwable) -> {
+                        if (throwable != null) {
+                            logger.error("Failed to publish {} sensor command.", sensor, throwable);
+                            throw new RuntimeException(throwable);
+                        }
+                        else {
+                            logger.info("Successfully published {} sensor command.", sensor);
+                        }
+                    });
+            default -> {
+                logger.error("Invalid sensor type, aborting...");
+                throw new IllegalArgumentException("Invalid sensor type, aborting...");
+            }
+        }
+    }
+
+    // TODO: Write publish command for set target temperature here...
+    public void publishTargetTemperature(String roomType, Double targetTemperature) throws JsonProcessingException {
+        String topic = String.format("%s/temperature/target", roomType);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Create and format date to our ISO format
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+        String timestamp = now.format(formatter);
+
+        ObjectNode payload = objectMapper.createObjectNode()
+                .put("target_temp_f", targetTemperature)
+                .put("timestamp", timestamp);
+
+        String jsonPayload = objectMapper.writeValueAsString(payload);
+
+        logger.info("Publishing target temperature command: {}...", jsonPayload);
+
+        mqttClient.publishWith()
+                .topic(topic)
+                .payload(jsonPayload.getBytes(UTF_8))
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .send()
+                .whenComplete((result, throwable) -> {
+                    if (throwable != null) {
+                        logger.error("Failed to publish target temperature command.", throwable);
+                        throw new RuntimeException(throwable);
+                    }
+                    else {
+                        logger.info("Successfully published target temperature command.");
+                    }
+                });
+    }
+
+    /*
+    ================================================
+    MQTT Utilities
+    ================================================
+    */
 
     private String extractRoomTypeFromTopic(String topic) {
         String[] topicByParts = topic.split("/");

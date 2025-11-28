@@ -20,6 +20,7 @@ public class HeaterController {
         this.heaterService = heaterService;
     }
 
+    // Example: GET /api/heater/status/roomA
     @GetMapping("/status/{roomType}")
     public ResponseEntity<?> getCurrentHeaterStatusByRoomType(@PathVariable("roomType") String roomType) {
         logger.info("Getting current heater status for room type: {}...", roomType);
@@ -43,6 +44,7 @@ public class HeaterController {
         }
     }
 
+    // Example: GET /api/heater/status/all
     @GetMapping("/status/all")
     public ResponseEntity<?> getAllHeaterStatusByRoom () {
         logger.info("Getting all latest heater status records...");
@@ -56,6 +58,7 @@ public class HeaterController {
         }
     }
 
+    // Example: POST /api/heater/create?roomtype=roomA&heaterstatus=true&recordingtime=2024-11-28T00:35:22
     @PostMapping("/create")
     public ResponseEntity<?> createHeaterRecord(@RequestParam("roomtype") String roomType, @RequestParam("heaterstatus") Boolean heaterStatus, @RequestParam("recordingtime") String recordingTime) {
         logger.info("Creating new heater record for room: {}...", roomType);

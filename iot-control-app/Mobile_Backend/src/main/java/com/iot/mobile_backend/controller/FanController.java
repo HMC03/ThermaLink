@@ -21,6 +21,7 @@ public class FanController {
         this.fanService = fanService;
     }
 
+    // Example: GET /api/fan/status/roomA
     @GetMapping("/status/{roomType}")
     public ResponseEntity<?> getCurrentFanStatusByRoomType(@PathVariable("roomType") String roomType) {
         logger.info("Getting current fan status for room type: {}...", roomType);
@@ -44,6 +45,7 @@ public class FanController {
         }
     }
 
+    // Example: GET /api/fan/status/all
     @GetMapping("/status/all")
     public ResponseEntity<?> getAllFanStatusByRooms() {
         logger.info("Getting all fan status records...");
@@ -57,6 +59,7 @@ public class FanController {
         }
     }
 
+    // Example: POST /api/fan/create?roomType=roomA&fanStatus=true&recordingTime=2022-03-01T12:00:00Z
     @PostMapping("/create")
     public ResponseEntity<?> createNewFanStatusRecord(@Valid @RequestParam("roomtype") String roomType, @RequestParam("fanstatus") Boolean fanStatus, @RequestParam("recordingtime") String recordingTime ) {
         logger.info("Creating new fan status record for room: {}...", roomType);
