@@ -1,0 +1,9 @@
+# Copy this file to config.h and fill in your real values
+#pragma once
+
+#define WIFI_SSID "Your_WiFi_SSID_here"
+#define WIFI_PASSWORD "Your_WiFi_Password_here"
+
+#define MQTT_BROKER_URI "mqtts://your-cluster.hivemq.cloud:8883"
+#define MQTT_USERNAME "your-username"
+#define MQTT_PASSWORD "your-password"
