@@ -21,16 +21,22 @@ public class PersonDetectController {
         this.personDetectService = personDetectService;
     }
 
-    @GetMapping("/status")
-    public ResponseEntity<?> getLatestPersonDetection() {
-        logger.info("Getting latest the detection status...");
+    // Example: GET /api/person-detect/status/roomA
+    @GetMapping("/status/{roomType}")
+    public ResponseEntity<?> getLatestPersonDetection(@PathVariable("roomType") String roomType) {
+        logger.info("Getting latest the detection status for this room: {}...", roomType);
 
         try {
-            logger.info("Latest Detection Activity: {}", personDetectService.getLatestPersonDetectionRecord());
-            return ResponseEntity.ok(personDetectService.getLatestPersonDetectionRecord());
+            if (roomType == null || roomType.trim().isEmpty()) {
+                logger.error("Room type is empty or null, aborting...");
+                return ResponseEntity.badRequest().body("Room type is empty or null.");
+            }
+
+            logger.info("Latest Detection Activity: {}", personDetectService.getLatestPersonDetectionRecordByRoom(roomType));
+            return ResponseEntity.ok(personDetectService.getLatestPersonDetectionRecordByRoom(roomType));
         }
         catch (RuntimeException e) {
-            logger.error("No person detection data found.");
+            logger.error("No person detection data found for this room: {}.", roomType);
             return ResponseEntity.notFound().build(); // 404
         }
         catch (Exception e) {
@@ -39,11 +45,30 @@ public class PersonDetectController {
         }
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<?> createNewDetectionRecord(@Valid @RequestParam("persondetected") Boolean personDetected, @RequestParam("confidence") Double confidence, @RequestParam("recordingtime") String recordingTime) {
-        logger.info("Creating new person detection record...");
+    // Example: GET /api/person-detect/status/all
+    @GetMapping("/status/all")
+    public ResponseEntity<?> getAllPersonDetectionRecords() {
+        logger.info("Getting all person detection records...");
 
         try {
+            return ResponseEntity.ok(personDetectService.getAllPersonDetectionRecords()); // Returns an empty list if no data found
+        }
+        catch (Exception e) {
+            logger.error("Error occurred while getting all person detection records: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body("Internal server error.");
+        }
+    }
+
+    // Example: POST /api/person-detect/create?persondetected=true&confidence=0.87&recordingtime=2024-11-28T00:35:22
+    @PostMapping("/create")
+    public ResponseEntity<?> createNewDetectionRecord(@Valid @RequestParam("roomtype") String roomType, @RequestParam("persondetected") Boolean personDetected, @RequestParam("confidence") Double confidence, @RequestParam("recordingtime") String recordingTime) {
+        logger.info("Creating new person detection record for room: {}...", roomType);
+
+        try {
+            if (roomType == null || roomType.trim().isEmpty()) {
+                logger.error("Room type is empty or null, aborting...");
+                return ResponseEntity.badRequest().body("Room type is empty or null.");
+            }
             if (personDetected == null) {
                 logger.error("Person detected is empty or null, aborting...");
                 return ResponseEntity.badRequest().body("Person detected is empty or null.");
@@ -58,6 +83,7 @@ public class PersonDetectController {
             }
 
             PersonDetectionDTO personDetectionDTO = new PersonDetectionDTO();
+            personDetectionDTO.setRoomType(roomType);
             personDetectionDTO.setPersonDetected(personDetected);
             personDetectionDTO.setConfidence(confidence);
             personDetectionDTO.setDetectionTime(recordingTime);

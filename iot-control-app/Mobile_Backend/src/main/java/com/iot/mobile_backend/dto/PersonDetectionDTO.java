@@ -8,6 +8,9 @@ import lombok.Data;
 
 @Data
 public class PersonDetectionDTO {
+    @NotBlank(message = "Room type is required")
+    private String roomType;
+
     @NotNull(message = "Person detected status is required")
     private Boolean personDetected;
 
