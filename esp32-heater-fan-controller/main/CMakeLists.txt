@@ -1,6 +1,11 @@
 idf_component_register(
-    SRCS "app_main.c"
-    PRIV_REQUIRES esp-tls esp_wifi esp_event nvs_flash
-    INCLUDE_DIRS "."
-    EMBED_TXTFILES "mosquitto.org.crt"
+    SRCS
+    # "main.c"
+    "wifi.c"
+    "hivemq.c"
+    # "tests/wifi_test.c"
+    "tests/hivemq_test.c"
+    INCLUDE_DIRS "." "../include"
+    EMBED_TXTFILES "../certs/hivemq.crt"
+    REQUIRES esp-tls esp_wifi nvs_flash esp_event esp_netif mqtt 
 )
