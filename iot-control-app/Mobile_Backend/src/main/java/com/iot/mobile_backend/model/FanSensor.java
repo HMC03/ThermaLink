@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Data
-@Table(name = "person_detection")
-public class PersonDetection {
+@Table(name = "fan_status")
+public class FanSensor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,13 +18,10 @@ public class PersonDetection {
     @Column(name = "room_type", nullable = false)
     private String roomType;
 
-    @Column(nullable = false, name="person_detected")
-    private Boolean personDetected;
-
     @Column(nullable = false)
-    private Double confidence;
+    private Boolean fanStatus;
 
-    @Column(nullable = false, name="detection_time")
+    @Column(nullable = false, name = "recording_time")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime detectionTime;
+    private LocalDateTime recordingTime;
 }

@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.List;
 
 @Service
 public class PersonDetectService {
@@ -22,24 +22,37 @@ public class PersonDetectService {
         this.personDetectRepo = personDetectRepo;
     }
 
-    public PersonDetection getLatestPersonDetectionRecord()
+    public PersonDetection getLatestPersonDetectionRecordByRoom(String roomType)
     {
-        logger.info("Checking current person detection status...");
+        logger.info("Checking current person detection status for this room: {}...", roomType);
 
-        return personDetectRepo.findFirstByOrderByDetectionTimeDesc()
-                .orElseThrow(() -> new RuntimeException("No person detection data found."));
+        return personDetectRepo.findFirstByRoomTypeOrderByDetectionTimeDesc(roomType)
+                .orElseThrow(() -> new RuntimeException("No person detection data found for this room."));
+    }
+
+    public List<PersonDetection> getAllPersonDetectionRecords() {
+        logger.info("Fetching all person detection records in each room...");
+
+        List<PersonDetection> personDetections = personDetectRepo.getAllRoomDetections();
+
+        if (personDetections.isEmpty()) {
+            logger.warn("No person detection data found.");
+        }
+
+        return personDetections;
     }
 
     public void recordPersonDetection(PersonDetectionDTO detectionDTO) {
-        logger.info("Recording new person detection activity at time: {}...", detectionDTO.getDetectionTime());
+        logger.info("Recording new person detection activity at time: {} for this room, {}...", detectionDTO.getDetectionTime(), detectionDTO.getRoomType());
 
         PersonDetection newDetection = new PersonDetection();
+        newDetection.setRoomType(detectionDTO.getRoomType());
         newDetection.setPersonDetected(detectionDTO.getPersonDetected());
         newDetection.setConfidence(detectionDTO.getConfidence());
         newDetection.setDetectionTime(parseRecordingTime(detectionDTO.getDetectionTime()));
 
         personDetectRepo.save(newDetection);
-        logger.info("New detected activity has been added to database.");
+        logger.info("New detected activity at the room, {} has been added to database.", detectionDTO.getRoomType());
     }
 
     private LocalDateTime parseRecordingTime(String recordingTime) {
